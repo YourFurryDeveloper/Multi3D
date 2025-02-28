@@ -1,30 +1,44 @@
-// /api/game.js
-import { Server } from 'socket.io';
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
 
-export default function handler(req, res) {
-  if (req.method === 'GET') {
-    return res.status(200).send('Socket.io Server is running');
-  }
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
 
-  const io = new Server(res.socket.server);
+const PORT = process.env.PORT || 3000;
 
-  io.on('connection', (socket) => {
-    console.log('A user connected');
-    
-    socket.on('join', (username) => {
-      console.log(`${username} joined`);
-      // Add user to the game
-    });
+let users = {};
 
-    socket.on('move', (position) => {
-      // Handle player movement
-    });
+app.use(express.static('public'));
 
-    socket.on('disconnect', () => {
-      console.log('User disconnected');
-    });
+// Handle incoming WebSocket connections
+io.on('connection', (socket) => {
+  console.log('a user connected');
+  
+  // When a user joins, assign them a username and store them
+  socket.on('join', (username) => {
+    users[socket.id] = { username, position: { x: 0, y: 0, z: 0 } };
+    console.log(`${username} joined`);
+    io.emit('userList', users); // broadcast the user list
   });
 
-  res.socket.server.io = io;
-  res.end();
-}
+  // Update user position
+  socket.on('move', (position) => {
+    if (users[socket.id]) {
+      users[socket.id].position = position;
+      io.emit('userMove', { id: socket.id, position });
+    }
+  });
+
+  // When a user disconnects, remove them from the list
+  socket.on('disconnect', () => {
+    console.log(`${users[socket.id]?.username} disconnected`);
+    delete users[socket.id];
+    io.emit('userList', users); // broadcast the updated user list
+  });
+});
+
+server.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
