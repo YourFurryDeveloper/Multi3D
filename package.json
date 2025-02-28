@@ -1,0 +1,9 @@
+{
+  "name": "multiplayer-game",
+  "version": "1.0.0",
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^4.3.2",
+    "three": "^0.132.2"
+  }
+}
