@@ -1,26 +1,10 @@
-const socket = io();
+// public/game.js
 
-// Set up three.js scene
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
-
-// Set up a simple cube for players
-const geometry = new THREE.BoxGeometry(1, 1, 1);
-const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-const playerCube = new THREE.Mesh(geometry, material);
-scene.add(playerCube);
-
-// Camera controls (WASD, mouse movement)
-let velocity = new THREE.Vector3();
-let direction = new THREE.Vector3();
-let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-let canJump = false;
+const socket = io('/api/game'); // Connect to the serverless WebSocket endpoint
 
 let username = '';
 let isPointerLocked = false;
+let playerCube = null;
 
 // Handle pointer lock
 document.body.addEventListener('click', () => {
@@ -30,7 +14,23 @@ document.body.addEventListener('click', () => {
   }
 });
 
-// Update movement based on user input
+// Create the 3D scene
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// Set up a simple cube for players
+const geometry = new THREE.BoxGeometry(1, 1, 1);
+const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+playerCube = new THREE.Mesh(geometry, material);
+scene.add(playerCube);
+
+let velocity = new THREE.Vector3();
+let direction = new THREE.Vector3();
+let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+
 function handleMovement() {
   if (moveForward) velocity.z -= 0.1;
   if (moveBackward) velocity.z += 0.1;
@@ -40,7 +40,7 @@ function handleMovement() {
   playerCube.position.add(velocity);
 }
 
-// Socket handling
+// Join game function (triggered by button)
 function joinGame() {
   username = document.getElementById('username').value;
   if (username) {
@@ -48,18 +48,13 @@ function joinGame() {
   }
 }
 
-// Listen for other players' movements
+// Listen for other players' movements (useful in multiplayer mode)
 socket.on('userMove', (data) => {
   console.log('User moved:', data);
-  // Handle updating positions for other users
+  // Update the positions of other players here
 });
 
-// Listen for the list of users
-socket.on('userList', (users) => {
-  console.log('Users:', users);
-});
-
-// Game update loop
+// Game loop (update the scene)
 function animate() {
   requestAnimationFrame(animate);
 
